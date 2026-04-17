@@ -1,0 +1,14 @@
+{
+  "name": "starlight-review-importer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily importer for hashtagged review posts from X and Bluesky into Notion.",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/x.js && node --check src/bluesky.js && node --check src/notion.js && node --check src/utils.js"
+  },
+  "engines": {
+    "node": ">=20 <21"
+  }
+}

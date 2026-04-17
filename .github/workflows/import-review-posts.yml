@@ -1,0 +1,49 @@
+name: Import review posts
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      hashtag:
+        description: "検索対象ハッシュタグ（# なし）"
+        required: false
+        default: "舞台創造科のレビュー"
+      lookback_hours:
+        description: "取得対象の時間数"
+        required: false
+        default: "24"
+      dry_run:
+        description: "Notion へ書き込まずに確認のみ行う"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+      HASHTAG: ${{ github.event_name == 'workflow_dispatch' && inputs.hashtag || '舞台創造科のレビュー' }}
+      IMPORT_LOOKBACK_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.lookback_hours || '24' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Syntax check
+        run: npm run check
+
+      - name: Run importer
+        run: node src/index.js
