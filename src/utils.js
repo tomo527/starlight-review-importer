@@ -97,31 +97,35 @@ export function normalizeUrl(value) {
     return null;
   }
 
-  const url = new URL(value);
-  const hostname = url.hostname.toLowerCase();
-  const normalizedHost =
-    hostname === "twitter.com" ||
-    hostname === "www.twitter.com" ||
-    hostname === "mobile.twitter.com" ||
-    hostname === "www.x.com" ||
-    hostname === "mobile.x.com"
-      ? "x.com"
-      : hostname;
+  try {
+    const url = new URL(String(value).trim());
+    const hostname = url.hostname.toLowerCase();
+    const normalizedHost =
+      hostname === "twitter.com" ||
+      hostname === "www.twitter.com" ||
+      hostname === "mobile.twitter.com" ||
+      hostname === "www.x.com" ||
+      hostname === "mobile.x.com"
+        ? "x.com"
+        : hostname;
 
-  url.protocol = "https:";
-  url.hostname = normalizedHost;
-  url.hash = "";
-  url.search = "";
+    url.protocol = "https:";
+    url.hostname = normalizedHost;
+    url.hash = "";
+    url.search = "";
 
-  if ((url.protocol === "https:" && url.port === "443") || (url.protocol === "http:" && url.port === "80")) {
-    url.port = "";
+    if ((url.protocol === "https:" && url.port === "443") || (url.protocol === "http:" && url.port === "80")) {
+      url.port = "";
+    }
+
+    if (url.pathname !== "/") {
+      url.pathname = url.pathname.replace(/\/+$/, "");
+    }
+
+    return url.toString();
+  } catch {
+    return null;
   }
-
-  if (url.pathname !== "/") {
-    url.pathname = url.pathname.replace(/\/+$/, "");
-  }
-
-  return url.toString();
 }
 
 export function formatFields(fields = {}) {
