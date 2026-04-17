@@ -8,7 +8,7 @@ import {
 } from "./utils.js";
 
 const NOTION_API_BASE_URL = "https://api.notion.com/v1";
-const NOTION_VERSION = "2025-09-03";
+const NOTION_VERSION = "2026-03-11";
 
 function notionHeaders(token) {
   return {
