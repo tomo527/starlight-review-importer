@@ -1,18 +1,24 @@
 import { fetchJson, isWithinTimeWindow, logInfo, normalizeUrl } from "./utils.js";
 
 const X_SEARCH_URL = "https://api.x.com/2/tweets/search/recent";
+const X_END_TIME_BUFFER_MS = 15000;
 
 export async function fetchXPosts({ hashtag, bearerToken, cutoff, now, timeoutMs }) {
   const posts = [];
   const seenIds = new Set();
   let nextToken;
+  const safeEndTime = new Date(now.getTime() - X_END_TIME_BUFFER_MS);
 
   do {
     const url = new URL(X_SEARCH_URL);
     url.searchParams.set("query", `#${hashtag} -is:retweet`);
     url.searchParams.set("max_results", "100");
     url.searchParams.set("start_time", cutoff.toISOString());
-    url.searchParams.set("end_time", now.toISOString());
+
+    if (safeEndTime.getTime() > cutoff.getTime()) {
+      url.searchParams.set("end_time", safeEndTime.toISOString());
+    }
+
     url.searchParams.set("expansions", "author_id");
     url.searchParams.set("tweet.fields", "author_id,created_at");
     url.searchParams.set("user.fields", "username");
