@@ -1,5 +1,6 @@
 const DEFAULT_TIMEOUT_MS = 15000;
 const PLACEHOLDER_TIMEZONE = "Asia/Tokyo";
+const DEFAULT_USER_AGENT = "starlight-review-importer/1.0 (+https://github.com/tomo527/starlight-review-importer)";
 
 export class AppError extends Error {
   constructor(message, options = {}) {
@@ -161,11 +162,16 @@ export async function fetchJson(url, options = {}) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const mergedHeaders = {
+    Accept: "application/json, text/plain, */*",
+    "User-Agent": DEFAULT_USER_AGENT,
+    ...headers
+  };
 
   try {
     const response = await fetch(url, {
       method,
-      headers,
+      headers: mergedHeaders,
       body,
       signal: controller.signal
     });
