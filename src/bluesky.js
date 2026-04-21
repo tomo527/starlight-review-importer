@@ -1,4 +1,4 @@
-import { fetchJson, getOptionalEnv, isWithinTimeWindow, logInfo, logWarn, normalizeUrl } from "./utils.js";
+import { AppError, fetchJson, getOptionalEnv, isWithinTimeWindow, logInfo, logWarn, normalizeUrl } from "./utils.js";
 
 const DEFAULT_BLUESKY_SERVICE = "https://bsky.social";
 const BLUESKY_CREATE_SESSION_PATH = "/xrpc/com.atproto.server.createSession";
@@ -12,6 +12,11 @@ function extractRkey(uri) {
 function extractDid(uri) {
   const parts = String(uri).split("/");
   return parts[2] ?? null;
+}
+
+function buildSearchQuery(hashtag) {
+  const normalized = String(hashtag).trim().replace(/^#/, "");
+  return `#${normalized}`;
 }
 
 export function getBlueskyConfigFromEnv() {
@@ -61,64 +66,80 @@ export async function fetchBlueskyPosts({ hashtag, cutoff, now, timeoutMs, ident
     service,
     timeoutMs
   });
+  const query = buildSearchQuery(hashtag);
 
   const posts = [];
   const seenUris = new Set();
   let cursor;
 
-  do {
-    const url = new URL(`${getServiceOrigin(service)}${BLUESKY_SEARCH_POSTS_PATH}`);
-    url.searchParams.set("tag", hashtag);
-    url.searchParams.set("sort", "latest");
-    url.searchParams.set("limit", "100");
+  try {
+    do {
+      const url = new URL(`${getServiceOrigin(service)}${BLUESKY_SEARCH_POSTS_PATH}`);
+      url.searchParams.set("q", query);
+      url.searchParams.set("tag", hashtag);
+      url.searchParams.set("sort", "latest");
+      url.searchParams.set("limit", "100");
 
-    if (cursor) {
-      url.searchParams.set("cursor", cursor);
-    }
+      if (cursor) {
+        url.searchParams.set("cursor", cursor);
+      }
 
-    const payload = await fetchJson(url, {
-      headers: {
-        Authorization: `Bearer ${accessJwt}`
-      },
-      source: "Bluesky",
-      timeoutMs
+      const payload = await fetchJson(url, {
+        headers: {
+          Authorization: `Bearer ${accessJwt}`
+        },
+        source: "Bluesky",
+        timeoutMs
+      });
+
+      for (const item of payload.posts ?? []) {
+        const uri = item.uri ?? null;
+        const createdAt = item.record?.createdAt ?? item.indexedAt ?? null;
+
+        if (!uri || !createdAt || seenUris.has(uri)) {
+          continue;
+        }
+
+        if (!isWithinTimeWindow(createdAt, cutoff, now)) {
+          continue;
+        }
+
+        seenUris.add(uri);
+
+        const handle = item.author?.handle ?? null;
+        const rkey = extractRkey(uri);
+        const profile = handle ?? extractDid(uri);
+
+        if (!rkey || !profile) {
+          continue;
+        }
+
+        posts.push({
+          source: "Bluesky",
+          sourceId: uri,
+          url: normalizeUrl(`https://bsky.app/profile/${profile}/post/${rkey}`),
+          createdAt,
+          authorHandle: handle ? `@${handle}` : null
+        });
+      }
+
+      cursor = payload.cursor;
+    } while (cursor);
+  } catch (error) {
+    logWarn("bluesky.fetch.failed", {
+      query,
+      tag: hashtag,
+      service: getServiceOrigin(service),
+      message: error.message
     });
 
-    for (const item of payload.posts ?? []) {
-      const uri = item.uri ?? null;
-      const createdAt = item.record?.createdAt ?? item.indexedAt ?? null;
+    throw new AppError(
+      `[Bluesky] searchPosts failed for query=${query} tag=${hashtag}: ${error.message}`,
+      { source: "Bluesky", cause: error }
+    );
+  }
 
-      if (!uri || !createdAt || seenUris.has(uri)) {
-        continue;
-      }
-
-      if (!isWithinTimeWindow(createdAt, cutoff, now)) {
-        continue;
-      }
-
-      seenUris.add(uri);
-
-      const handle = item.author?.handle ?? null;
-      const rkey = extractRkey(uri);
-      const profile = handle ?? extractDid(uri);
-
-      if (!rkey || !profile) {
-        continue;
-      }
-
-      posts.push({
-        source: "Bluesky",
-        sourceId: uri,
-        url: normalizeUrl(`https://bsky.app/profile/${profile}/post/${rkey}`),
-        createdAt,
-        authorHandle: handle ? `@${handle}` : null
-      });
-    }
-
-    cursor = payload.cursor;
-  } while (cursor);
-
-  logInfo("bluesky.fetch.complete", { count: posts.length, service: getServiceOrigin(service) });
+  logInfo("bluesky.fetch.complete", { count: posts.length, service: getServiceOrigin(service), query, tag: hashtag });
   return {
     posts,
     skipped: false

@@ -134,6 +134,7 @@ Notion 追加前には `notion.record.prepare` ログが出るため、手動実
 
 - `x.fetch.complete` と `bluesky.fetch.complete` の取得件数
 - Bluesky credentials 未設定時の `bluesky.fetch.skipped`
+- Bluesky 検索失敗時の `bluesky.fetch.failed`
 - 片側失敗または skip 時の `import.partial_source_status`
 - 最終の `import.summary` にある `xStatus` `blueskyStatus` `candidateCount` `duplicateSkippedCount`
 
@@ -143,7 +144,7 @@ Notion 追加前には `notion.record.prepare` ログが出るため、手動実
 2. `作品URL` と `更新日` の存在と型を検証
 3. Notion の既存レコードをページング取得して既存 URL を収集
 4. X Recent Search API で `#舞台創造科のレビュー -is:retweet` を取得
-5. Bluesky は `createSession` で app password 認証し、認証付き `searchPosts` で `tag=舞台創造科のレビュー` を取得
+5. Bluesky は `createSession` で app password 認証し、認証付き `searchPosts` へ `q=#舞台創造科のレビュー` を必須送信しつつ `tag=舞台創造科のレビュー` も付けて取得
 6. 内部では UTC / ISO 8601 で 24 時間以内かを厳密判定
 7. URL 正規化後の `作品URL` で重複を除外
 8. 未登録分だけ Notion に追加
