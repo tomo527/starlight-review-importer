@@ -33,12 +33,13 @@ jobs:
       HASHTAG: ${{ github.event_name == 'workflow_dispatch' && inputs.hashtag || '舞台創造科のレビュー' }}
       IMPORT_LOOKBACK_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.lookback_hours || '24' }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
 
