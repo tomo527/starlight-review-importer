@@ -8,7 +8,7 @@ on:
       hashtag:
         description: "検索対象ハッシュタグ（# なし）"
         required: false
-        default: "舞台創造科のレビュー"
+        default: "舞台創造科のレヴュー"
       lookback_hours:
         description: "取得対象の時間数"
         required: false
@@ -32,7 +32,7 @@ jobs:
       X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
       BLUESKY_IDENTIFIER: ${{ secrets.BLUESKY_IDENTIFIER }}
       BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
-      HASHTAG: ${{ github.event_name == 'workflow_dispatch' && inputs.hashtag || '舞台創造科のレビュー' }}
+      HASHTAG: ${{ github.event_name == 'workflow_dispatch' && inputs.hashtag || '舞台創造科のレヴュー' }}
       IMPORT_LOOKBACK_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.lookback_hours || '24' }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
